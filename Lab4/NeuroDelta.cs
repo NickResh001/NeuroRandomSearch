@@ -47,7 +47,11 @@ namespace Lab4
         private double educationAcuracy;
         private int selectionSize;
         private double areaRadius;
-        private double areaModifier;
+
+        private int successTests;
+        private int allTests;
+        private double percentTests => (double)successTests / allTests;
+        private double areaModifier => percentTests > 0.25 ? -0.01 : 0.01;
 
         public NeuroRandomSearch()
         {
@@ -55,10 +59,12 @@ namespace Lab4
         }
         private void Initialize()
         {
-            educationAcuracy = 0.1;
+            educationAcuracy = 0.01;
             selectionSize = 3;
             areaRadius = 1;
-            areaModifier = 0.9999;
+
+            successTests = 0;
+            allTests = 0;
 
             Random rand = new Random();
             weights = new double[4];
@@ -108,6 +114,7 @@ namespace Lab4
                 double[] extraWeights = GetRandomPointInArea();
                 double newSum = 0;
                 double oldSum = 0;
+                double realSum = 0;
                 for (int i = 0; i < selectionSize; i++)
                 {
                     ObjectInfo objectInfo = ObjectInfo.RandomObject
@@ -117,18 +124,20 @@ namespace Lab4
                         (0, double.Pi / 2),
                         (9.7, 9.9)
                     );
+                    realSum += objectInfo.path / selectionSize;
                     newSum += ObjectiveFunction(objectInfo, extraWeights) / selectionSize;
                     oldSum += ObjectiveFunction(objectInfo, weights) / selectionSize;
                 }
 
-                Console.WriteLine(newSum);
+                double percent = (realSum - Math.Abs(realSum - newSum)) / realSum;
+                Console.WriteLine(percent * 100);
+                allTests++;
                 if (newSum < oldSum)
                 {
+                    successTests++;
                     weights = extraWeights;
-                    areaRadius *= areaModifier;
-                    if (areaRadius <= double.Epsilon)
-                        break;
-                    if (newSum < educationAcuracy)
+                    areaRadius = Math.Max(areaRadius + areaModifier, Math.Abs(areaModifier));
+                    if (allTests > 600000)
                         break;
                 }
             }
